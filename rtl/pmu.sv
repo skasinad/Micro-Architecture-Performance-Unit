@@ -27,7 +27,7 @@ module pmu#(
     end 
    endgenerate
 
-   integer j; 
+   int j; 
    always_comb begin
     for(j = 0; j < TOTAL_EVENTS; j++) begin 
         finalcntr[j*COUNTER_DEPTH +: COUNTER_DEPTH] = buffer[j];

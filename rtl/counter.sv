@@ -11,7 +11,9 @@ module counter#(
         if(rst) begin
             crntcount <= '0; 
         end else if (enable && sigevent) begin
-            crntcount <= crntcount + 1; 
+            if(crntcount != '1) begin 
+                crntcount <= crntcount + 1;
+            end 
         end 
     end 
 
