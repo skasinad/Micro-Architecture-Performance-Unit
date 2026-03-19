@@ -184,6 +184,30 @@ One of the most useful directed tests was the independent counting case, where o
 
 The waveform results matched the expected behavior of the RTL and supported the correctness of the PMU under the tested scenarios.
 
+### Full Simulation Overview
+
+The full simulation waveform provides a complete view of the directed verification sequence. It captures the progression through reset behavior, enable gating, single-event counting, simultaneous multi-event counting, independent counting, and later reset-related checks in one ModelSim run.
+
+![Full simulation overview](results/waveforms/full_simulation_overview.png)
+
+*Full ModelSim waveform overview showing the complete PMU verification sequence across multiple directed test cases.*
+
+### Enable-Gating Result
+
+One of the important checks in the testbench was confirming that event activity does not affect the counters when the PMU is disabled. In the waveform below, `enable = 0` while `sigs = 4'b1111`, and all counters remain at `0000`. This confirms that the global enable control is correctly preventing unintended increments.
+
+![Enable-gating waveform](results/waveforms/reset_enable_behavior.png)
+
+*Enable-gated counting behavior in ModelSim. With `enable = 0` and `sigs = 4'b1111`, all PMU counters remain at zero, confirming that event activity does not increment counters when counting is disabled.*
+
+### Independent Counter Result
+
+The independent counting case provided one of the clearest demonstrations of PMU correctness. In this test, only one event input was asserted repeatedly while the PMU remained enabled. The waveform shows that only the corresponding counter increments across successive cycles, while the other counters remain unchanged. This confirms that the event counters operate independently and are not incorrectly coupled together.
+
+![Independent counter waveform](results/waveforms/independent_counter_test.png)
+
+*Independent event counting in ModelSim. With `sigs = 4'b0100` held active for three clock cycles while `enable = 1`, only the corresponding counter increments from 1 to 3, while the other counters remain unchanged.*
+
 ---
 
 ## Current Status
