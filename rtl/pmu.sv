@@ -10,8 +10,7 @@ module pmu#(
 );
 
     logic[COUNTER_DEPTH-1:0] buffer[TOTAL_EVENTS-1:0];
-   
-   //I need to hook up all the counters now
+
    genvar i; 
    generate
     for(i = 0; i < TOTAL_EVENTS; i++) begin : genblk
