@@ -188,7 +188,7 @@ The waveform results matched the expected behavior of the RTL and supported the 
 
 The full simulation waveform provides a complete view of the directed verification sequence. It captures the progression through reset behavior, enable gating, single-event counting, simultaneous multi-event counting, independent counting, and later reset-related checks in one ModelSim run.
 
-![Full simulation overview](results/waveforms/full_simulation_overview.png)
+![Full simulation overview](results/waveforms/pmu-waveform-full.png)
 
 *Full ModelSim waveform overview showing the complete PMU verification sequence across multiple directed test cases.*
 
