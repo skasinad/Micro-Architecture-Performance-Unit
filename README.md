@@ -1,291 +1,235 @@
-# Micro-Architecture Performance Monitor (PMU)
+# Micro-Architecture Performance Monitor (PMU) v2
 
 ## Project Overview
 
-This project is a parameterizable Micro-Architecture Performance Monitor (PMU) written in SystemVerilog. The goal of the design was to build a reusable hardware block that can monitor multiple event signals and keep track of them using separate counters. This kind of logic can be useful in a processor or digital system when trying to track how often certain events happen during execution, such as stalls, branch-related activity, hazards, cache-related events, or any other internal signals chosen by the designer.
+This project is the second version of my Micro-Architecture Performance Monitor (PMU), written in SystemVerilog. The first version of the PMU was focused on the basic idea: taking in a set of event signals and counting how often each one happens using separate counters. That version helped me build the core RTL and verification flow.
 
-Instead of making one fixed counter design, this project was built to be scalable. The number of monitored events and the width of each counter can both be changed through parameters, which makes the PMU more reusable and easier to adapt to different systems.
+For version 2, the goal is to move beyond a simple fixed counter block and make the PMU look more like a real hardware peripheral that could fit into a larger processor or SoC-style design.
 
-The project was developed in the UMass VLSI CAD environment and verified using ModelSim. Functional behavior was checked through directed testbench simulation, waveform analysis, and SystemVerilog assertion-based checks.
+Instead of permanently wiring one event to one counter, PMU v2 is being built so the user can choose which event each counter should track. On top of that, the PMU will also include a memory-mapped register interface so software, firmware, or a verification testbench can configure it and read back results through registers instead of only looking at internal signals directly.
+
+So overall, PMU v2 is about turning the original idea into something more configurable, more realistic, and more useful as an integration project.
 
 ---
 
 ## Purpose of the Project
 
-The main reason for doing this project was to get stronger in RTL design and digital verification by building something that is small enough to finish but still meaningful from a micro-architecture point of view.
+The purpose of this version is to keep building stronger RTL and verification skills while also getting closer to the type of hardware block that would actually be used in a bigger digital system.
 
-This project helped me work on:
-
-- writing clean SystemVerilog RTL
-- building a parameterized and scalable hardware module
-- using generate blocks and modular hierarchy
-- writing a directed testbench
-- debugging with waveforms in ModelSim
-- adding assertion-based checks to catch design mistakes
-- organizing a project in a more professional hardware design style
-
-The bigger idea behind the project is that performance monitoring logic is not just random counter logic. It is support logic that can help observe what is happening inside a design, which makes it relevant to processor-oriented and system-level digital work.
-
----
-
-## PMU Function
-
-At a high level, the PMU takes in a vector of event signals. Each event signal is connected to its own counter. When the PMU is enabled, any event bit that is high at the rising edge of the clock causes its matching counter to increment by one. When reset is asserted, all counters clear back to zero.
-
-The PMU output is a packed bus that contains all counter values together. Each slice of that bus corresponds to one monitored event.
-
-This creates a simple monitoring structure where events are counted independently and the whole design stays scalable through parameters.
-
----
-
-## Design Features
-
-The PMU includes the following features:
-
-- parameterizable number of monitored events
-- parameterizable counter width
-- one counter per event
-- synchronous counting on the rising edge of the clock
-- synchronous reset behavior
-- global enable signal for gating counting activity
-- packed output bus containing all counter values
-- counter saturation behavior at max value instead of wraparound
-- assertion-based checks for important design behaviors
-
----
-
-## Files in This Project
-
-### `rtl/counter.sv`
-This is the reusable counter module used by the PMU. It increments when both `enable` and `sigevent` are high on the rising edge of the clock. If reset is high, it clears to zero. The counter also saturates at its maximum value instead of wrapping around.
-
-### `rtl/pmu.sv`
-This is the top-level PMU module. It instantiates one counter per event using a generate loop. The outputs of those counters are stored internally and then packed into a single output vector.
-
-### `tb/pmu_tb.sv`
-This is the directed testbench used for simulation. It applies different event patterns and checks that the PMU behaves correctly across reset, enable gating, independent counting, simultaneous counting, and reset priority cases.
-
-### `results/waveforms/`
-This folder stores waveform screenshots taken from ModelSim to document important verification results.
-
----
-
-## Parameterization
-
-The PMU currently uses these main parameters:
-
-- `TOTAL_EVENTS` – number of independent event signals being monitored
-- `COUNTER_DEPTH` – width of each counter in bits
-
-For the testbench and main verification setup used in this project:
-
-- `TOTAL_EVENTS = 4`
-- `COUNTER_DEPTH = 16`
-
-So in the current version, the PMU monitors 4 event signals and each one has its own 16-bit counter.
-
----
-
-## Top-Level Interface
-
-### Inputs
-
-- `clk` – system clock
-- `rst` – synchronous reset
-- `enable` – global enable for counting
-- `signals[TOTAL_EVENTS-1:0]` – vector of monitored event inputs
-
-### Output
-
-- `finalcntr[TOTAL_EVENTS*COUNTER_DEPTH-1:0]` – packed vector containing all event counter values
-
-For the 4-event, 16-bit setup used in simulation:
-
-- `finalcntr[15:0]` = counter for event 0
-- `finalcntr[31:16]` = counter for event 1
-- `finalcntr[47:32]` = counter for event 2
-- `finalcntr[63:48]` = counter for event 3
-
----
-
-## Design Behavior
-
-The PMU was designed around the following expected behaviors:
-
-1. When reset is asserted, all counters return to zero.
-2. When `enable` is low, counters do not increment even if event signals are active.
-3. Each event only affects its own matching counter.
-4. Multiple event signals can be counted in the same cycle.
-5. Reset has priority over counting logic.
-6. Counters should stop incrementing once they reach their maximum value.
-
-These behaviors were used to guide both the directed testbench and the assertion checks.
-
----
-
-## RTL Design Notes
-
-The design is organized hierarchically using a reusable `counter` module and a top-level `pmu` module.
-
-The `counter` module handles the actual increment logic. It only increments when both `enable` and `sigevent` are high. It also clears on reset and saturates at the maximum value.
-
-The `pmu` module takes a vector of event signals and creates one counter instance per event using a generate loop. This makes the design more scalable than hardcoding separate counters manually. Internally, each counter output is stored in an array and then packed into the final PMU output bus.
-
-This organization keeps the RTL compact while still showing modularity, parameterization, and clean top-level structure.
-
----
-
-## Verification Strategy
-
-The PMU was verified in ModelSim using a directed SystemVerilog testbench. The testbench was written to check the main functional behaviors of the PMU step by step instead of only running one simple case.
-
-The verification process focused on applying known input patterns, observing the resulting counter activity, and checking whether the output matched the expected PMU behavior.
-
-The following cases were tested:
-
-### Test 1 – Reset clears all counters
-Reset was asserted and the testbench checked that all counters returned to zero.
-
-### Test 2 – Enable gating
-All event inputs were driven high while `enable` remained low. The expected result was that no counter should increment.
-
-### Test 3 – Single-event counting
-A single event bit was asserted for one clock cycle while `enable` was high. The expected result was that only the corresponding counter should increment to 1.
-
-### Test 4 – Simultaneous multi-event counting
-All event bits were asserted together for one clock cycle. The expected result was that all counters should increment together.
-
-### Test 5 – Counter independence
-Only one event bit was asserted for multiple cycles. The expected result was that only the matching counter should increment while the others remained unchanged.
-
-### Test 6 – Reset during active counting
-Counters were first allowed to increment, then reset was asserted during the counting sequence. The expected result was that all counters should clear back to zero.
-
-### Test 7 – Reset priority over event activity
-Reset and active event inputs were applied in the same cycle. The expected result was that reset should win and the counters should stay at zero.
-
-### Test 8 – Counter freeze when enable goes low
-A counter was incremented first, then `enable` was dropped while the same event stayed active. The expected result was that the counter should hold its previous value and stop changing.
-
----
-
-## Assertion-Based Checks
-
-In addition to the directed testbench, SystemVerilog assertion-based checks were added into the counter module to strengthen verification.
-
-These checks were used to confirm important design rules such as:
-
-- the counter never goes past its maximum value
-- reset correctly clears the counter
-- the counter does not change when `enable` is low
-- the counter stays at max value instead of wrapping when another event arrives at saturation
-
-These assertions were run in ModelSim using a command-line flow without the GUI. This made it easier to quickly check assertion behavior without having to repeatedly work through the full remote GUI environment.
-
-Adding these checks helped make the verification stronger because it was not only based on looking at waveforms manually. The design was also being checked against specific expected behaviors during simulation.
-
----
-
-## Simulation Flow
-
-Simulation was run in ModelSim. The main flow used in this project was:
-
-1. compile `counter.sv`, `pmu.sv`, and `pmu_tb.sv`
-2. launch the testbench in ModelSim
-3. run the simulation
-4. inspect waveform behavior for reset, enable, event inputs, packed outputs, and internal counters
-5. review directed test results from the testbench output
-6. run assertion-based checks in command-line simulation
-
-This allowed both visual verification through waveforms and behavior checking through assertions.
-
----
-
-## Waveform Results
-
-Waveform inspection was used as visual confirmation that the PMU behaved correctly during simulation. The ModelSim traces showed the expected response of the PMU under reset, enable gating, event activity, and repeated counting conditions.
-
-Some of the main observations from the waveform review were:
-
-- counters returned to zero whenever reset was asserted
-- event signals did not cause counting when `enable` was low
-- a single asserted event incremented only its matching counter
-- multiple asserted events incremented their matching counters in the same cycle
-- repeated assertion of one event signal caused only that one counter to accumulate counts
-- counters held their value correctly when counting conditions were not met
-- reset overrode event-driven counting when both occurred together
-
-### Full Simulation Overview
-
-The full simulation waveform gives a complete view of the directed PMU verification sequence across multiple tests in one run. It captures the progression through reset, enable gating, single-event counting, simultaneous counting, independent counting, and later reset-related tests.
-
-![Full simulation overview](results/waveforms/pmu-waveform-full.png)
-
-*Full ModelSim waveform overview showing the complete PMU verification sequence across the directed testbench scenarios.*
-
-### Enable-Gating Result
-
-One important check in the project was making sure active event inputs do not affect the PMU when counting is disabled. In the waveform below, `enable = 0` while `sigs = 4'b1111`, and all counters remain at `0000`. This confirms that the global enable signal is correctly gating the counter activity.
-
-![Enable-gating waveform](results/waveforms/reset_enable_behavior.png)
-
-*Enable-gated counting behavior in ModelSim. With `enable = 0` and `sigs = 4'b1111`, all PMU counters remain at zero, confirming that event activity does not increment counters when counting is disabled.*
-
-### Independent Counter Result
-
-The independent counting test was one of the clearest checks of PMU correctness. In this case, only one event input was asserted for multiple clock cycles while the PMU remained enabled. The waveform shows that only the corresponding counter increments across successive cycles, while the other counters remain unchanged.
-
-![Independent counter waveform](results/waveforms/independent_counter_test.png)
-
-*Independent event counting in ModelSim. With `sigs = 4'b0100` held active for three clock cycles while `enable = 1`, only the corresponding counter increments from 1 to 3, while the other counters remain unchanged.*
-
----
-
-## What This Project Demonstrates
-
-This project demonstrates a full small-scale RTL design and verification flow around a reusable hardware monitoring block. Even though the PMU itself is not a massive design, it brings together several important digital design ideas in one project:
+This version is meant to help me work on:
 
 - modular RTL design
-- parameterization and scalability
-- generate-based structural design
-- directed simulation-based verification
-- waveform debugging
-- assertion-based checking
-- project organization and documentation
+- cleaner block partitioning
+- programmable hardware behavior instead of fixed wiring
+- memory-mapped peripheral design
+- APB-style register interface design
+- register planning and documentation
+- more realistic verification structure
+- writing project documentation in a more complete hardware-IP style
 
-This kind of block is also the type of support logic that fits naturally around larger processor, controller, or digital subsystem designs where visibility into internal events matters.
-
----
-
-## Current Status
-
-At this stage, the RTL implementation, directed simulation, waveform documentation, and assertion-based verification have all been completed.
-
-The current version of the project focuses on functional correctness at the RTL level. A possible future extension would be adding synthesis and implementation analysis, or extending the PMU interface with more advanced readout or control features.
+The bigger reason for this project is that PMUs are not just counters for the sake of counters. They are observation logic. In real systems, being able to select events, configure monitoring behavior, and read counts through registers is what makes performance-monitoring hardware practical.
 
 ---
 
-## Possible Future Improvements
+## What Changes in PMU v2
 
-Some possible extensions for later versions of the project are:
+Compared to version 1, this new version is planned with several major upgrades.
 
-- per-event enable masking
-- overflow flag support
-- register-style read interface instead of only a packed output bus
-- synthesis and design compiler analysis
-- more advanced concurrent assertion properties
-- additional event types and larger PMU configurations
+### 1. Programmable event selection
+
+In PMU v1, each counter was hardwired to one specific event signal. For example, event 0 always went to counter 0, event 1 always went to counter 1, and so on.
+
+In PMU v2, that is changing. Each counter will be able to select which event signal it listens to. This means the PMU is no longer fixed to one permanent signal-to-counter mapping.
+
+This makes the block more flexible and more reusable because the same hardware can now monitor different things depending on how it is configured.
+
+### 2. Memory-mapped register interface
+
+PMU v2 will expose registers at specific addresses through an APB-style interface. That means the PMU can be controlled like a normal hardware peripheral.
+
+Instead of only driving raw RTL control signals in a testbench, the user will be able to:
+
+- write configuration values into registers
+- choose which events each counter monitors
+- enable or disable PMU behavior through control registers
+- read back counter values through the register interface
+
+This is a major step toward making the PMU feel like a real subsystem instead of just a standalone RTL exercise.
+
+### 3. Counter control registers
+
+Version 2 will include control registers that define the PMU behavior. These registers will likely be used for things such as:
+
+- global enable control
+- possible clear or reset-style control
+- per-counter event select configuration
+- reading the current counter values
+
+This makes the design software-visible and easier to integrate into a larger design flow.
+
+### 4. Better documentation and integration support
+
+Version 2 is also being organized with more documentation, including a register map and an integration guide.
+
+That means the project is not only about writing RTL, but also about explaining how someone else would connect the block, configure it, and use it correctly.
 
 ---
 
-## Tools Used
+## PMU v2 High-Level Function
 
-- SystemVerilog
-- ModelSim
-- UMass VLSI CAD environment
+At a high level, PMU v2 will still monitor event activity using counters, but now with a more flexible path.
+
+The expected flow is:
+
+1. a set of raw event signals comes into the PMU
+2. configuration registers decide which event each counter should observe
+3. the selected event for each counter is routed through an event-mux stage
+4. the counters increment when their chosen event occurs and counting is enabled
+5. software or the testbench can read the counter values through the register interface
+
+So the counting idea stays the same, but the control and access method become much more advanced than in v1.
 
 ---
 
-## Author Note
+## Planned Design Features
 
-This project was built as a digital design and verification exercise focused on micro-architecture-oriented monitoring logic. The main goal was not just to make counters work, but to build the design in a reusable way, verify it carefully, and document the results clearly.
+PMU v2 is planned to include the following features:
+
+- parameterizable number of event inputs
+- parameterizable number of counters
+- parameterizable counter width
+- programmable event-to-counter mapping
+- one selectable event source per counter
+- APB-based memory-mapped register interface
+- control and configuration registers
+- readable counter registers
+- modular RTL hierarchy
+- basic integration and register documentation
+
+Depending on implementation details, parts of the v1 counter behavior such as saturation may be kept as-is or lightly updated.
+
+---
+
+## Planned File Structure
+
+The current planned project structure for PMU v2 is:
+
+```text
+PMU_v2/
+├── rtl/
+│   ├── counter.sv
+│   ├── pmu_event_mux.sv
+│   ├── pmu_counter_bank.sv
+│   ├── pmu_regblock_apb.sv
+│   ├── pmu_top.sv
+│   └── pmu_pkg.sv
+│
+├── tb/
+│   ├── pmu_tb_apb.sv
+│   └── apb_tasks.svh
+│
+├── docs/
+│   ├── integration_guide.md
+│   └── register_map.md
+│
+├── old/
+│   ├── pmu_v1.sv
+│   └── pmu_tb_v1.sv
+│
+└── README.md
+```
+
+---
+
+## Planned RTL Blocks
+
+### `rtl/counter.sv`
+
+This is the reusable counter module from version 1. It will probably stay in the design, with only light edits if needed. Its job is still to count event occurrences.
+
+### `rtl/pmu_event_mux.sv`
+
+This module will handle event selection. Based on configuration settings, it will choose which incoming event signal gets connected to each counter.
+
+### `rtl/pmu_counter_bank.sv`
+
+This module will group the counters together into one cleaner block. Instead of managing all counters directly at the top level, the design can treat the counter array as its own subsystem.
+
+### `rtl/pmu_regblock_apb.sv`
+
+This module will implement the memory-mapped APB register interface. It will decode addresses, handle reads and writes, and store PMU configuration values.
+
+### `rtl/pmu_top.sv`
+
+This will be the new main top-level PMU module. It will connect together the APB register block, the event mux logic, and the counter bank.
+
+### `rtl/pmu_pkg.sv`
+
+This file is optional but recommended. It can hold shared parameters, typedefs, address definitions, or other constants used across the PMU modules.
+
+---
+
+## Planned Verification Files
+
+### `tb/pmu_tb_apb.sv`
+
+This will be the new main testbench for PMU v2. Instead of only checking direct signal behavior, it will verify configuration and readback through the APB interface.
+
+### `tb/apb_tasks.svh`
+
+This optional helper file can hold common APB read/write tasks so the testbench stays cleaner and easier to extend.
+
+---
+
+## Planned Documentation Files
+
+### `docs/integration_guide.md`
+
+This document will explain how to hook the PMU into a larger design, what signals it expects, and how someone should use it from a system point of view.
+
+### `docs/register_map.md`
+
+This document will describe the PMU registers, their addresses, what each field means, and how the software-visible interface is supposed to work.
+
+---
+
+## Why This Version Matters More
+
+The first PMU version was useful because it proved the basic counting logic worked. It showed that multiple event signals could be counted independently, and it gave a solid starting point for RTL structure and testbench development.
+
+But PMU v2 matters more from a system-design perspective because it starts to answer more realistic questions:
+
+- how does software configure the PMU?
+- how does the PMU expose results back to the system?
+- how can the same hardware block be reused for different event choices?
+- how should the PMU be organized so it is easier to integrate and verify?
+
+So this version is not just "more features." It is a shift from a fixed demonstration block toward a configurable hardware IP block.
+
+---
+
+## Current Development Direction
+
+At this stage, PMU v2 is being planned around four main goals:
+
+1. programmable event selection
+2. memory-mapped register access
+3. counter control through registers
+4. better documentation and integration support
+
+The original PMU v1 design still matters because it provides the counter foundation and the first verified behavior model. But the active direction now is to build the second version as a more complete and realistic PMU architecture.
+
+---
+
+## Summary
+
+PMU v2 is a configurable performance-monitoring block written in SystemVerilog. It builds on the first version by adding selectable event routing, a register-based control interface, and a structure that is closer to a real hardware peripheral.
+
+The main idea is no longer just "count events." The goal now is:
+
+- choose what to count
+- control the PMU through registers
+- read results back through a standard interface
+- document the design clearly enough for integration
+
+That is what this version of the project is trying to achieve.
