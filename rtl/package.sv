@@ -8,7 +8,7 @@
 
 package pmu_pkg;
 
-    parameter int tevents = 8;
+    parameter int tevents = 16;
     parameter int ncntrs  = 4;
     parameter int cdepth  = 16;
     parameter int apb_dw  = 32;
