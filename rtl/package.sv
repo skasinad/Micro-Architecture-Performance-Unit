@@ -6,13 +6,13 @@
     some typedefs, and the first register addresses.
 */
 
-package pmu_pkg;
+package pmupackage;
 
     parameter int tevents = 16;
     parameter int ncntrs  = 4;
     parameter int cdepth  = 16;
     parameter int apb_dw  = 32;
-    parameter int apb_aw  = 12;
+    parameter int apb_aw  = 8;
 
     parameter int eselw = $clog2(tevents);
 
