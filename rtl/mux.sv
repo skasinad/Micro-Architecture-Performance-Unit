@@ -7,13 +7,13 @@
 */
 
 module mux #(
-    parameter int tevents = pmu_pkg::tevents,
-    parameter int ncntrs  = pmu_pkg::ncntrs,
+    parameter int tevents = pmupackage::tevents,
+    parameter int ncntrs  = pmupackage::ncntrs,
     parameter int eselw = $clog2(tevents)
 ) (
-    input logic [tevents-1:0] sigs,
-    input logic [eselw-1:0] evsel [ncntrs-1:0],
-    output logic sigout [ncntrs-1:0]
+    input logic[tevents-1:0] sigs,
+    input logic[eselw-1:0] evsel [ncntrs-1:0],
+    output logic sigout[ncntrs-1:0]
 );
 
     int i;
