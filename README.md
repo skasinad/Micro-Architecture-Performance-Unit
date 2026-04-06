@@ -118,14 +118,14 @@ The current planned project structure for PMU v2 is:
 PMU_v2/
 ├── rtl/
 │   ├── counter.sv
-│   ├── pmu_event_mux.sv
-│   ├── pmu_counter_bank.sv
-│   ├── pmu_regblock_apb.sv
+│   ├── mux.sv
+│   ├── counter_bank.sv
+│   ├── apbregblock.sv
 │   ├── pmu_top.sv
-│   └── pmu_pkg.sv
+│   └── package.sv
 │
 ├── tb/
-│   ├── pmu_tb_apb.sv
+│   ├── apb.sv
 │   └── apb_tasks.svh
 │
 ├── docs/
