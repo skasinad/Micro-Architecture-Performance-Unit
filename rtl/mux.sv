@@ -2,8 +2,7 @@
     mux.sv
     event select block for PMU v2.
     
-    each counter gets a select value and this picks which...
-    input event that counter should see
+    each counter gets a select value and this picks which... input event that counter should see
 */
 
 module mux #(

@@ -2,8 +2,7 @@
     package.sv
 
     package file for PMU v2.
-    just putting the common stuff here for now like widths,
-    some typedefs, and the first register addresses.
+    just putting the common stuff here for now like widths and some typedefs... and the first register addresses
 */
 
 package pmupackage;
