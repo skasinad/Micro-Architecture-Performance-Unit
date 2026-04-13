@@ -17,7 +17,7 @@ module counterbank #(
 
     genvar i;
     generate
-        for(i = 0; i < ncntrs; i++) begin : cblocks
+        for(i = 0; i < ncntrs; i++) begin:cblocks
             counter #(
                 .cdepth(cdepth)
             ) c0 (
