@@ -11,8 +11,9 @@ module mux #(
     parameter int eselw = $clog2(tevents)
 ) (
     input logic[tevents-1:0] sigs,
-    input logic[eselw-1:0] evsel [ncntrs-1:0],
-    output logic sigout[ncntrs-1:0]
+    output logic[ncntrs-1:0] sigout,
+
+    input logic[eselw-1:0] evsel [ncntrs-1:0]
 );
 
     int i;

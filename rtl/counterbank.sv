@@ -11,9 +11,12 @@ module counterbank #(
     input logic rst,
     input logic clear,
     input logic enable,
-    input logic sigin[ncntrs-1:0],
-    output logic[cdepth-1:0] countout[ncntrs-1:0]
+    input logic[ncntrs-1:0] sigin,
+    output logic[ncntrs*cdepth-1:0] countout
 );
+
+    logic[cdepth-1:0] cnts[ncntrs-1:0];
+    int j;
 
     genvar i;
     generate
@@ -26,9 +29,17 @@ module counterbank #(
                 .clear(clear),
                 .enable(enable),
                 .sigevent(sigin[i]),
-                .crntcount(countout[i])
+                .crntcount(cnts[i])
             );
         end
     endgenerate
+
+
+
+    always_comb begin
+        for(j = 0; j < ncntrs; j++) begin
+            countout[j*cdepth +: cdepth] = cnts[j];
+        end
+    end
 
 endmodule

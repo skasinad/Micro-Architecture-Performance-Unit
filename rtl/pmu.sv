@@ -1,9 +1,6 @@
 /*
-    pmu.sv - core pmu block for where the project is right now
-    event signals come in, mux chooses what each counter sees...
-
-
-    then the counter bank does the actual counting
+    welcome to pmu.sv, the CORE pmu block for where the project is right now
+    event signals come in, mux chooses what each counter sees... then the counter bank does the actual counting
 */
 
 module pmu #(
@@ -17,10 +14,11 @@ module pmu #(
     input logic enable,
     input logic[tevents-1:0] sigs,
     input logic[$clog2(tevents)-1:0] evsel[ncntrs-1:0],
-    output logic[cdepth-1:0] countout[ncntrs-1:0]
+    output logic[ncntrs*cdepth-1:0] countout
 );
 
-    logic sigpicked[ncntrs-1:0];
+    logic[ncntrs-1:0] sigpicked;
+
     mux #(
         .tevents(tevents),
         .ncntrs(ncntrs)
